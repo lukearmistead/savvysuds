@@ -25,7 +25,7 @@ def recommend():
     user_input = pd.DataFrame({'a': [20000 for _ in user_input], 'b': user_input})
     user_input.columns = ['user_id', 'item_id']
     user_input = gl.SFrame(user_input)
-    model = gl.load_model('models/is_3')
+    model = gl.load_model('../models/item_similarity_model')
     pred = list(model.recommend(users=[20000], new_observation_data=user_input, diversity=3)['item_id'])
 
     beers = pd.read_csv('data/raw_data/beers.csv')

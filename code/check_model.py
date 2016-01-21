@@ -23,9 +23,9 @@ def recs(users, model, ft, user_beers, beers):
 
     return pd.concat((user_beers, recs), axis=0).sort(['user_id', 'category'])
 
-def load_rec_data():
+def load_rec_data(ftiso_path, trade_path, trade_item_path):
     ftiso = pd.read_csv(
-        'data/raw_data/ftiso.csv',
+        '../data/raw_data/ftiso.csv',
         header=None,
         names=[
             'ID',
@@ -44,13 +44,17 @@ def load_rec_data():
                        iso_rate=1,
                        proposed_rate=1,
                        traded_rate=1,
-                       trade_path='data/raw_data/trades.csv',
-                       trade_item_path='data/raw_data/trade_items.csv',
-                       ftiso_path='data/raw_data/ftiso.csv')
-    user_beers = pd.read_csv('data/model_data/all_user_beers')[['user_id', 'item_id']]
-    beers = pd.read_csv('data/raw_data/beers.csv')
+                       trade_path='../data/raw_data/trades.csv',
+                       trade_item_path='../data/raw_data/trade_items.csv',
+                       ftiso_path='../data/raw_data/ftiso.csv')
+    user_beers = pd.read_csv('../data/model_data/all_user_beers')[['user_id', 'item_id']]
+    beers = pd.read_csv('../data/raw_data/beers.csv')
 
     return ft, user_beers, beers
+
+# train, test = gl.recommender.util.random_split_by_user(gl.SFrame(user_beers))
+# model = gl.recommender.item_similarity_recommender.create(train)
+# pr = model.evaluate(test, metric='precision_recall')
 
 if __name__ == '__main__':
     pass

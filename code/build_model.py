@@ -7,7 +7,7 @@ import pandas as pd
 import graphlab as gl
 
 import process_data as get
-# import check_model as check
+import check_model as check
 
 log = logging.getLogger(__name__)
 
