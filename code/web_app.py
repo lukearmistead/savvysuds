@@ -28,7 +28,7 @@ def recommend():
     model = gl.load_model('../models/item_similarity_model')
     pred = list(model.recommend(users=[20000], new_observation_data=user_input, diversity=3)['item_id'])
 
-    beers = pd.read_csv('data/raw_data/beers.csv')
+    beers = pd.read_csv('../data/raw_data/beers.csv')
     beer_recs = beers[beers['ID']
                 .isin(pred)] \
                 .to_html(columns=['Name', 'Style', 'Brewery Name'],index=False) \
