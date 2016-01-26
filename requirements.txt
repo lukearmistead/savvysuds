@@ -1,5 +1,4 @@
 numpy
 pandas
 GraphLab-Create
-matplotlib
 Flask

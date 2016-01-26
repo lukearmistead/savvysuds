@@ -16,6 +16,9 @@ BEER_RECEIVED = 2
 TRADE_DECLINED = 3
 
 
+###############################################
+### FUNCTIONS USED TO PREPROCESS MODEL DATA ###
+###############################################
 def model_data(sparse,
                 outlier,
                 iso_rate,
@@ -32,9 +35,9 @@ def model_data(sparse,
     - Sparse & outlier: the min & max number of user/beer interactions
     """
     # build combined trade & iso dataframe with ratings
-    trades, trade_items, ftiso = _load_rec_data(trade_path,
-                                                trade_item_path,
-                                                ftiso_path)
+    trades, trade_items, ftiso = _load_csvs(trade_path,
+                                           trade_item_path,
+                                           ftiso_path)
     all_trades = _get_trade_info(trades, trade_items)
     rated_trades = _get_trade_ratings(all_trades,
                                       proposed_rate=proposed_rate,
@@ -50,7 +53,7 @@ def model_data(sparse,
     return trimmed_rec_data
 
 
-def _load_rec_data(trade_path, trade_item_path, ftiso_path):
+def _load_csvs(trade_path, trade_item_path, ftiso_path):
     """
     load all data relevant to basic recommender and return as tuple of
     pandas dataframes
@@ -175,6 +178,9 @@ def _drop_sparse_or_outliers(rec_data, sparse, outlier):
     return trimmed_rec_data
 
 
+###############################################
+### FUNCTIONS USED TO PREPROCESS ITEM DATA  ###
+###############################################
 def item_data(beers_path='../data/raw_data/beers.csv',
               brewers_path='../data/raw_data/breweries.csv'):
     """preprocesses item data for recommender side data"""
@@ -197,5 +203,31 @@ def _load_item_data(beers_path, brewers_path):
     return beers, brewers
 
 
-if __name__ == '__main__':
-    main()
+###############################################
+###  FUNCTIONS USED TO PREPROCESS REC DATA  ###
+###############################################
+def rec_data(ftiso_path, trade_path, trade_item_path, beers_path):
+    """Loads data to make usable, readable recommendations in main.py"""
+    ftiso = pd.read_csv(ftiso_path,
+                        header=None,
+                        names=['ID',
+                               'Beer ID',
+                               'Quantity',
+                               'Cellar Quantity',
+                               'User ID',
+                               'Type',
+                               'Accessible List',
+                               'Created',
+                               'Modified'])
+    ft = ftiso[ftiso['Type'] == 'ft']
+    user_beers = model_data(sparse=0,
+                       outlier=10000000,
+                       iso_rate=1,
+                       proposed_rate=1,
+                       traded_rate=1,
+                       trade_path=trade_path,
+                       trade_item_path=trade_item_path,
+                       ftiso_path=ftiso_path)
+    user_beers = user_beers[['user_id', 'item_id']]
+    beers = pd.read_csv(beers_path)
+    return ft, user_beers, beers
