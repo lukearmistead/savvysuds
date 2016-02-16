@@ -34,14 +34,13 @@
           <div class="col-lg-12 text-center">
               <h1>savvy suds</h1>
               <p class="lead">rockin' beer recommendations<br> courtesy of 15,000 beer nerds</p>
-              <p>website's still in progress. for now, enter the untappd.com ids <br>of your favorite beersseparated by commas</p>
               <ul class="list-unstyled">
                   <li></li>
               </ul>
               <!-- Search bar -->
               <div class="input-group">
                 <form method="post" action="recommend">
-                <input type="text" class="form-control" name="beer_input">
+                <input id="user-beer" type="text" class="form-control typeahead" name="beer_input" placeholder="your favorite beer here">
                   <!-- <span class="input-group-btn"> -->
                   <br><br>
                   <input type=submit>
@@ -68,6 +67,53 @@
 
     <!-- Bootstrap Core JavaScript -->
     <script src="../static/js/bootstrap.min.js"></script>
+
+    <!-- tyepahead JavaScript -->
+    <script src="../static/js/typeahead.bundle.js"></script>
+
+    <script>
+    var beer_list = new Bloodhound({
+      // the JSON key to search through
+      datumTokenizer: Bloodhound.tokenizers.obj.whitespace('beer_info'),
+      // tokenizes the user input (I think)
+      queryTokenizer: Bloodhound.tokenizers.whitespace,
+      // tells bloodhound where the data lives
+      prefetch: '{{ url_for('static', filename='assets/beers.json') }}'
+    });
+
+    $('#user-beer').typeahead({
+      hint: true,
+      highlight: true,
+      minLength: 1
+    },
+    {
+      name: 'beer_list',
+      // JSON key of beer to display
+      displayKey: 'beer_info',
+      source: beer_list
+    });
+
+    /////////////////////////////////////////
+    //remote data
+    // var bestBeers = new Bloodhound({
+    //   datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
+    //   queryTokenizer: Bloodhound.tokenizers.whitespace,
+    //
+    //   prefetch: '../data/raw_data/beers.json',
+    //   remote: {
+    //     url: '../data/films/queries/%QUERY.json',
+    //     wildcard: '%QUERY'
+    //   }
+    // })
+    //
+    // $
+    // ('#remote.typeahead').typeahead(null, {
+    //   name: 'best-pictures',
+    //   display: 'value',
+    //   source: bestPictures
+    // })
+    </script>
+
 
 </body>
 

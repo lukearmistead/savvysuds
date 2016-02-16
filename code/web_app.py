@@ -4,6 +4,7 @@ import graphlab as gl
 from flask import Flask
 from flask import render_template
 from flask import Flask, request
+from flask import g
 app = Flask(__name__)
 
 '''
@@ -18,6 +19,7 @@ todo
 def main():
     return render_template('index.html')
 
+
 @app.route("/recommend", methods=['POST'])
 def recommend():
     user_input = str(request.form['beer_input']).split(',')
@@ -29,14 +31,20 @@ def recommend():
     pred = list(model.recommend(users=[20000], new_observation_data=user_input, diversity=3)['item_id'])
 
     beers = pd.read_csv('../data/raw_data/beers.csv')
-    beer_recs = beers[beers['ID']
+    # beers = g.beers
+    beer_recs = beers[ \
+                beers['ID'] \
                 .isin(pred)] \
                 .to_html(columns=['Name', 'Style', 'Brewery Name'],index=False) \
                 .replace('border="1" class="dataframe"','class=table table-hover')
-
     return render_template('index.html', recommend=True, beer_recs=beer_recs)
 
 
-if __name__ == "__main__":
-    ### load app here
+def main():
+    # with app.app_context():
+        # app.g.beers = pd.read_csv('../data/raw_data/beers.csv')
     app.run(host='0.0.0.0', port=8080, debug=True)
+
+
+if __name__ == "__main__":
+    main()
