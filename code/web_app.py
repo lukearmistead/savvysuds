@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 import graphlab as gl
 from flask import Flask
