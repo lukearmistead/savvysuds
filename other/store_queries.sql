@@ -75,14 +75,11 @@ ORDER BY shop_id, count(ftiso.beer_id) DESC;
 -- order of most often offered For Trade by BEX users to least often offered
 -- For Trade by BEX users.
 
---482
-
--- TOGGLES
-
 -- breweries held in shop inventory
 SELECT
   store_items.shop_id,
   store_shop.name,
+  store_shop.state,
   all_breweries.brewery_id,
   all_breweries.brewery_name,
   all_breweries.brewery_state,
@@ -109,8 +106,8 @@ LEFT OUTER JOIN (
     ON breweries.id = beers.brewery_id
   LEFT OUTER JOIN ftiso
     ON beers.id = ftiso.beer_id
-  WHERE ftiso.type = 'ft'
-    AND DATE(ftiso.created) > (NOW() - INTERVAL 200 DAY)
+  WHERE ftiso.type = 'ft' -- toggle 'ft' or 'iso'
+    AND DATE(ftiso.created) > (NOW() - INTERVAL 200 DAY) -- toggle recentness of ft creation
   GROUP BY breweries.id
 ) AS all_breweries
 
