@@ -11,4 +11,4 @@ I used an item-based collaborative filtering model that employs Jaccard similari
 The dataset is comprised by the wishlists and beer trading information of BEX users. Users who had too few beer interactions were filtered out to avoid bias in the relationships between beers.
 
 ### Presentation
-I gave a talk on this model in late January. Check out the slides here: ow.ly/Ysc05
+I gave a talk on this model in late January. Check out the slides here: www.ow.ly/Ysc05

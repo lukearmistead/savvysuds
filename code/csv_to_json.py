@@ -19,7 +19,7 @@ if __name__ == '__main__':
     beers = beers.merge(wishlist, left_on='id', right_index=True)
     beers = beers[beers['quantity'] > 1]
 
-    beers['beer_info'] = beers['name'] + ' | ' + beers['brewery_name'] + ' | ' + beers['id'].apply(str)
+    beers['beer_info'] = beers['name'] + ': ' + beers['brewery_name']
     beer_list = beers[['id', 'beer_info']]
     beer_list.index = beer_list.id
     beer_list.drop('id', axis=1)
