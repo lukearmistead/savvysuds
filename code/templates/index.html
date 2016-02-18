@@ -33,35 +33,46 @@
       <div class="row">
           <div class="col-lg-12 text-center">
               <h1>savvy suds</h1>
-              <p class="lead">rockin' beer recommendations<br> courtesy of 15,000 beer nerds</p>
+              <p class="lead">beer recommendations,
+              </br>courtesy of 15,000 beer nerds
+              </br><a href="http://www.github.com/lukearmistead/savvysuds">github.com/lukearmistead/savvysuds</a></p>
+              <p>made with tlc by
+                <a href="http://www.linkedin.com/in/lukearmistead">luke armistead</a>
+                in partnership with
+                <a href="http://www.thebeerexchange.io">The Beer Exchange</a>
+              </p>
+              </p>
+
               <ul class="list-unstyled">
                   <li></li>
               </ul>
               <!-- Search bar -->
               <div class="input-group">
                 <form method="post" action="recommend">
-                <input id="user-beer" type="text" class="form-control typeahead" name="beer_input" placeholder="your favorite beer here">
-                  <!-- <span class="input-group-btn"> -->
+                <input id="user-beer" type="text" class="form-control typeahead" name="beer_input" placeholder="type your favorite beer here...">
+              </br>
+                <input id="user-beer2" type="text" class="form-control typeahead" name="beer_input2" placeholder="and another here...">
+                </br>
+                <input id="user-beer3" type="text" class="form-control typeahead" name="beer_input3" placeholder="one more here.">
                   <br><br>
                   <input type=submit>
                   <!-- </span> -->
                 </input>
                 </form>
               </div>
-
           </div>
+
       </div>
     </div>
 
     {% if recommend %}
     <div class="container">
       <div class="col-lg-12 text-center">
-      <p class="lead">fancy taste! try these:</p>
+      <p class="lead">try these!</p>
       </div>
       {{beer_recs|safe}}
     </div>
     {% endif %}
-
     <!-- jQuery -->
     <script src="../static/js/jquery.js"></script>
 
@@ -72,13 +83,19 @@
     <script src="../static/js/typeahead.bundle.js"></script>
 
     <script>
+    //typeahead
     var beer_list = new Bloodhound({
       // the JSON key to search through
       datumTokenizer: Bloodhound.tokenizers.obj.whitespace('beer_info'),
       // tokenizes the user input (I think)
       queryTokenizer: Bloodhound.tokenizers.whitespace,
-      // tells bloodhound where the data lives
-      prefetch: '{{ url_for('static', filename='assets/beers.json') }}'
+      // tells bloodhound where the data lives (might use prefetch for commonly used stuff)
+      // remote: {
+      //   url: "{{ url_for('static', filename='assets/beers.json') }}",
+      // }
+      prefetch: {
+      url: '{{ url_for('static', filename='assets/beers.json') }}'
+      }
     });
 
     $('#user-beer').typeahead({
@@ -88,33 +105,35 @@
     },
     {
       name: 'beer_list',
-      // JSON key of beer to display
-      displayKey: 'beer_info',
+      // JSON key of thing to display
+      displayKey: 'beer_info', // can be a function - return gets displayed
       source: beer_list
     });
 
-    /////////////////////////////////////////
-    //remote data
-    // var bestBeers = new Bloodhound({
-    //   datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
-    //   queryTokenizer: Bloodhound.tokenizers.whitespace,
-    //
-    //   prefetch: '../data/raw_data/beers.json',
-    //   remote: {
-    //     url: '../data/films/queries/%QUERY.json',
-    //     wildcard: '%QUERY'
-    //   }
-    // })
-    //
-    // $
-    // ('#remote.typeahead').typeahead(null, {
-    //   name: 'best-pictures',
-    //   display: 'value',
-    //   source: bestPictures
-    // })
+    $('#user-beer2').typeahead({
+      hint: true,
+      highlight: true,
+      minLength: 1
+    },
+    {
+      name: 'beer_list',
+      // JSON key of thing to display
+      displayKey: 'beer_info', // can be a function - return gets displayed
+      source: beer_list
+    });
+
+    $('#user-beer3').typeahead({
+      hint: true,
+      highlight: true,
+      minLength: 1
+    },
+    {
+      name: 'beer_list',
+      // JSON key of thing to display
+      displayKey: 'beer_info', // can be a function - return gets displayed
+      source: beer_list
+    });
     </script>
-
-
 </body>
 
 </html>

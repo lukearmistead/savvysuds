@@ -5,6 +5,7 @@ from flask import Flask
 from flask import render_template
 from flask import Flask, request
 from flask import g
+from flask import jsonify
 app = Flask(__name__)
 
 '''
@@ -19,24 +20,36 @@ todo
 def main():
     return render_template('index.html')
 
+# @app.route("/suggest")
+# def suggest():
+#     user_input = request.args.get('input')
+#     return jsonify({'asdf': 'you typed ' + user_input})
+    # implement python search of database
+    # return jsonified list of records
 
 @app.route("/recommend", methods=['POST'])
 def recommend():
-    user_input = str(request.form['beer_input']).split(',')
-    user_input = [int(fig) for fig in user_input]
+    brew1 = int(request.form['beer_input'].split(' | ')[-1])
+    brew2 = int(request.form['beer_input2'].split(' | ')[-1])
+    brew3 = int(request.form['beer_input3'].split(' | ')[-1])
+
+    user_input = [brew1, brew2, brew3]
+
     user_input = pd.DataFrame({'a': [20000 for _ in user_input], 'b': user_input})
     user_input.columns = ['user_id', 'item_id']
     user_input = gl.SFrame(user_input)
     model = gl.load_model('../models/item_similarity_model')
-    pred = list(model.recommend(users=[20000], new_observation_data=user_input, diversity=3)['item_id'])
+    pred = list(model.recommend(users=[20000], k=5, new_observation_data=user_input, diversity=3)['item_id'])
 
-    beers = pd.read_csv('../data/raw_data/beers.csv')
-    # beers = g.beers
-    beer_recs = beers[ \
-                beers['ID'] \
-                .isin(pred)] \
-                .to_html(columns=['Name', 'Style', 'Brewery Name'],index=False) \
-                .replace('border="1" class="dataframe"','class=table table-hover')
+    beers = pd.read_csv('../data/raw_data/beers_3.csv')
+    beer_recs = beers[beers['id'].isin(pred)]
+    beer_recs = beer_recs[['name', 'brewery_name', 'style', 'score']]
+    beer_recs.columns = ['brew', 'brewery', 'style', 'untappd score']
+    beer_recs = beer_recs.to_html(columns=['brew', 'brewery', 'style', 'untappd score'],
+                                  index=False)
+
+    beer_recs = beer_recs.replace('border="1" class="dataframe"',
+                                  'class=table table-hover')
     return render_template('index.html', recommend=True, beer_recs=beer_recs)
 
 

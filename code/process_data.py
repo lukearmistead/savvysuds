@@ -231,3 +231,7 @@ def rec_data(ftiso_path, trade_path, trade_item_path, beers_path):
     user_beers = user_beers[['user_id', 'item_id']]
     beers = pd.read_csv(beers_path)
     return ft, user_beers, beers
+
+###############################################
+###    PREPROCESS JSON DATA FOR WEB APP     ###
+###############################################
