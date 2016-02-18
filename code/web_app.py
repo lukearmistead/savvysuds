@@ -28,9 +28,9 @@ def main():
 
 @app.route("/recommend", methods=['POST'])
 def recommend():
-    brew1 = int(request.form['beer_input'].split(' | ')[-1])
-    brew2 = int(request.form['beer_input2'].split(' | ')[-1])
-    brew3 = int(request.form['beer_input3'].split(' | ')[-1])
+    brew1 = int(request.form['beer_input1_id'])
+    brew2 = int(request.form['beer_input2_id'])
+    brew3 = int(request.form['beer_input3_id'])
 
     user_input = [brew1, brew2, brew3]
 

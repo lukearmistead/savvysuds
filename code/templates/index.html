@@ -49,11 +49,14 @@
               <!-- Search bar -->
               <div class="input-group">
                 <form method="post" action="recommend">
-                <input id="user-beer" type="text" class="form-control typeahead" name="beer_input" placeholder="type your favorite beer here...">
+                <input id="user-beer1" type="text" class="form-control typeahead" name="beer_input1" placeholder="type your favorite beer here...">
+                <input id="user-beer1-id" type="hidden" name="beer_input1_id">
               </br>
                 <input id="user-beer2" type="text" class="form-control typeahead" name="beer_input2" placeholder="and another here...">
+                <input id="user-beer2-id" type="hidden" name="beer_input2_id">
                 </br>
                 <input id="user-beer3" type="text" class="form-control typeahead" name="beer_input3" placeholder="one more here.">
+                <input id="user-beer3-id" type="hidden" name="beer_input3_id">
                   <br><br>
                   <input type=submit>
                   <!-- </span> -->
@@ -98,7 +101,7 @@
       }
     });
 
-    $('#user-beer').typeahead({
+    $('#user-beer1').typeahead({
       hint: true,
       highlight: true,
       minLength: 1
@@ -108,6 +111,9 @@
       // JSON key of thing to display
       displayKey: 'beer_info', // can be a function - return gets displayed
       source: beer_list
+    }).bind('typeahead:selected', function(obj, datum, name) {
+      var idField = $('#user-beer1-id');
+      idField.val(datum.id);
     });
 
     $('#user-beer2').typeahead({
@@ -120,6 +126,9 @@
       // JSON key of thing to display
       displayKey: 'beer_info', // can be a function - return gets displayed
       source: beer_list
+    }).bind('typeahead:selected', function(obj, datum, name) {
+      var idField = $('#user-beer2-id');
+      idField.val(datum.id);
     });
 
     $('#user-beer3').typeahead({
@@ -132,6 +141,9 @@
       // JSON key of thing to display
       displayKey: 'beer_info', // can be a function - return gets displayed
       source: beer_list
+    }).bind('typeahead:selected', function(obj, datum, name) {
+      var idField = $('#user-beer3-id');
+      idField.val(datum.id);
     });
     </script>
 </body>
