@@ -187,7 +187,7 @@ def item_data(beers_path, brewers_path):
     beers, brewers = _load_item_data(beers_path, brewers_path)
     # join all item tables and narrow to relevant columns
     all_items = beers.merge(brewers, left_on='brewery_id', right_on='id')
-    item_data = all_items[['ID_x', 'Style', 'ABV', 'Score_x', 'State', 'type', 'Score_y', 'URL']]
+    item_data = all_items[['id_x', 'style', 'abv', 'score_x', 'state', 'type', 'score_y', 'url']]
     item_data.columns = ['item_id', 'beer_style', 'abv', 'beer_score', 'brewer_state', 'brewer_type', 'brewer_score', 'url']
     #url to binary
     item_data['url'] = item_data['url'].notnull()

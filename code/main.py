@@ -1,4 +1,3 @@
-import csv
 import logging
 import os
 import shutil
@@ -8,7 +7,7 @@ import pandas as pd
 import graphlab as gl
 
 import process_data as get
-
+import build_model as build
 
 log = logging.getLogger(__name__)
 
@@ -18,19 +17,31 @@ TRADE_PATH = '../data/input/trades.csv'
 TRADE_ITEM_PATH = '../data/input/trade_items.csv'
 FTISO_PATH = '../data/input/ftiso.csv'
 BEERS_PATH = '../data/input/beers.csv'
-BREWERS_PATH = '../data/input/beers.csv'
+BREWERS_PATH = '../data/input/breweries.csv'
+USERS_PATH = '../data/input/users.csv'
 
 
-# output model and data paths
-MODEL_DF_PATH = '../data/output/model.csv'
-ALL_USER_BEERS_PATH = '../data/output/user_beers.csv'
-RECOMMEND_PATH = '../data/output/recs.json'
-IS_MODEL_PATH = '../models/item_similarity_model'
-NMF_MODEL_PATH = '../models/item_similarity_model'
+# intermediate csv output paths (used to build recommenders)
+IS_DF_PATH = '../data/output/is_model.csv'
+NMF_DF_PATH = '../data/output/nmf_model.csv'
+POP_DF_PATH = '../data/output/pop_model.csv'
+
+
+# model output paths
+IS_MODEL_PATH = '../models/is_model'
+NMF_MODEL_PATH = '../models/nmf_model'
+POP_MODEL_PATH = '../models/pop_model'
+
+
+# model output paths
+IS_REC_PATH = '../data/output/is_recs.json'
+NMF_REC_PATH = '../data/output/nmf_recs.json'
+POP_REC_PATH = '../data/output/pop_recs.json'
 
 
 def _load_data():
     """create and csvs for training the model and making recommendations"""
+    # item similarity model csv
     get.model_data(sparse=4,
                     outlier=10000,
                     iso_rate=0,
@@ -39,26 +50,30 @@ def _load_data():
                     trade_path=TRADE_PATH,
                     trade_item_path=TRADE_ITEM_PATH,
                     ftiso_path=FTISO_PATH,
-                    output_path=MODEL_DF_PATH)
+                    output_path=IS_DF_PATH)
 
-    # get lists of users with all of their beers & beers to exclude
-    get.model_data(sparse=0,
-                    outlier=100000000,
-                    iso_rate=1,
-                    proposed_rate=1,
+    # get nmf model csv
+    get.model_data(sparse=3,
+                    outlier=500,
+                    iso_rate=0,
+                    proposed_rate=0,
                     traded_rate=1,
                     trade_path=TRADE_PATH,
                     trade_item_path=TRADE_ITEM_PATH,
                     ftiso_path=FTISO_PATH,
-                    output_path=ALL_USER_BEERS_PATH)
+                    output_path=NMF_DF_PATH)
 
 
-def _save_model(output_path, model):
-    """saves model in models folder after checking if model path exists"""
-    if os.path.exists(output_path):
-        shutil.rmtree(output_path)
-    model.save(output_path)
-    log.info('model saved as %s',output_path)
+    # get popularity model csv
+    get.model_data(sparse=0,
+                    outlier=500,
+                    iso_rate=0,
+                    proposed_rate=0,
+                    traded_rate=1,
+                    trade_path=TRADE_PATH,
+                    trade_item_path=TRADE_ITEM_PATH,
+                    ftiso_path=FTISO_PATH,
+                    output_path=POP_DF_PATH)
 
 
 def check_recs(users, model, ft, user_beers, beers):
@@ -87,25 +102,6 @@ def recs(users, model, ft, user_beers, beers):
     exclude_beers.columns = [['user_id', 'item_id']]
 
 
-def nmf_model(output_path, df):
-    """builds an nmf model from completed trades, including beer side data"""
-    item_data = gl.SFrame(get.item_data(BEERS_PATH, BREWERS_PATH))
-    # build model
-    model = gl.recommender.ranking_factorization_recommender.create(
-        mat,
-        item_data=item_data,
-        nmf=False
-    )
-    _save_model(output_path, model)
-
-
-def is_model(df, output_path):
-    """creates and saves best item similarity model"""
-    mat = gl.SFrame(df[['user_id', 'item_id']])
-    model = gl.recommender.item_similarity_recommender.create(mat)
-    _save_model(IS_MODEL_PATH, model)
-
-
 def get_precision_recall():
     """check the precision and recall for the best model"""
     model_df = gl.SFrame.read_csv(MODEL_DF_PATH)
@@ -116,24 +112,39 @@ def get_precision_recall():
 
 
 def main():
-    # create csvs to train model & generate recommendations
+    # create csvs to train models
     _load_data()
-    model_df = gl.SFrame.read_csv(MODEL_DF_PATH)
-    rec_df = gl.SFrame.read_csv(ALL_USER_BEERS_PATH)
+    is_df = gl.SFrame.read_csv(IS_DF_PATH)
+    nmf_df = gl.SFrame.read_csv(NMF_DF_PATH)
+    pop_df = gl.SFrame.read_csv(POP_DF_PATH)
+    item_df = gl.SFrame(get.item_data(BEERS_PATH, BREWERS_PATH))
+    # list of beers to exclude from recs, by user
     exclude_beers = pd.read_csv(FTISO_PATH)[['user_id', 'beer_id']]
     exclude_beers.columns = ['user_id', 'item_id']
     exclude_beers = gl.SFrame(exclude_beers)
-
-    # build, save, and load model
-    is_model(model_df, IS_MODEL_PATH)
-    model = gl.load_model(IS_MODEL_PATH)
-
+    # build & save models
+    build.is_model(is_df, IS_MODEL_PATH)
+    build.nmf_model(nmf_df, item_df, NMF_MODEL_PATH)
+    build.pop_model(pop_df, POP_MODEL_PATH)
+    # load all models
+    is_model = gl.load_model(IS_MODEL_PATH)
+    nmf_model = gl.load_model(NMF_MODEL_PATH)
+    pop_model = gl.load_model(POP_MODEL_PATH)
     # get recommendations & export as json
-    recs = model.recommend(users=rec_df['user_id'],
-                    # new_observation_data=rec_df,
+    users = gl.SFrame.read_csv(USERS_PATH)
+    is_recs = is_model.recommend(users=users['id'],
                     exclude=exclude_beers,
                     diversity=3)
-    recs.export_json(RECOMMEND_PATH, orient='records')
+    nmf_recs = nmf_model.recommend(users=users['id'],
+                    exclude=exclude_beers,
+                    diversity=3)
+    pop_recs = pop_model.recommend(users=users['id'],
+                    exclude=exclude_beers,
+                    diversity=3)
+    # save recommendations
+    is_recs.export_json(IS_REC_PATH, orient='records')
+    nmf_recs.export_json(NMF_REC_PATH, orient='records')
+    pop_recs.export_json(POP_REC_PATH, orient='records')
 
 
 if __name__ == '__main__':
