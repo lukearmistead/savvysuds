@@ -8,8 +8,8 @@ import process_data as get
 
 if __name__ == '__main__':
     # initialize file paths
-    input_path = '../data/raw_data/beers_3.csv'
-    wishlist_input_path = '../data/raw_data/ftiso_2.csv'
+    input_path = '../data/input/beers.csv'
+    wishlist_input_path = '../data/input/ftiso.csv'
     output_path = 'static/assets/beers.json'
 
     wishlist = pd.read_csv(wishlist_input_path)
