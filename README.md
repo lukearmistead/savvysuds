@@ -13,5 +13,6 @@ The dataset is comprised by the wishlists and beer trading information of BEX us
 ### Presentation
 I gave a talk on this model in late January. Check out the slides here: www.ow.ly/Ysc05
 
+### Pretty Picture of Beer Preference Clusters
 ![graph](/other/clusters.png)
 
