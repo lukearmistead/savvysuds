@@ -1,5 +1,6 @@
 # Savvy Suds
 I built an item similarity recommender using trading data from 15,000 craft beer nerds. You can check out the finished product at www.savvysuds.io.
+
 ![graph](/other/website.png)
 
 ### Overview
@@ -10,8 +11,8 @@ I used an item-based collaborative filtering model that employs Jaccard similari
 
 ### Dataset
 The dataset is comprised by the wishlists and beer trading information of BEX users. Users who had too few beer interactions were filtered out to avoid bias in the relationships between beers.
+
 ![graph](/other/clusters.png)
 
-Links
 ### Presentation
 I gave a talk on this model in late January. Check out the slides here: www.ow.ly/Ysc05
