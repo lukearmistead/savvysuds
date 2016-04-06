@@ -1,3 +1,5 @@
+from __future__ import division
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import process_data as get
@@ -8,7 +10,13 @@ FTISO_PATH = '../data/input/ftiso.csv'
 BEERS_PATH = '../data/input/beers.csv'
 BREWERIES_PATH = '../data/input/breweries.csv'
 DISTRIBUTION_PATH = '../data/input/beer_distribution.csv'
-
+SCORE_WEIGHTS = {
+    'ratio_score': 0.3,
+    'iso_score': 0.3,
+    'untappd_score': 0.3,
+    'geo_score': 0.0,
+    'production_score': 0.1
+    }
 
 def weighted_percentile(vector):
     """returns percentile values of a vector
@@ -26,22 +34,6 @@ def feature_scale(df, col_name):
     score_diff = df[col_name] - df[col_name].min()
     norm_score = score_diff / (df[col_name].max() - df[col_name].min())
     return norm_score
-
-
-def load_data():
-    """loads all relevant csvs
-    not used
-    """
-    ftiso = pd.read_csv('../data/input/ftiso.csv')
-    beers = pd.read_csv('../data/input/beers.csv')
-    breweries = pd.read_csv('../data/input/breweries.csv')
-    distribution = pd.read_csv('../data/input/beer_distribution.csv')
-    # calculate iso & ft counts
-    iso = ftiso[ftiso['type'] == 'iso']
-    iso = iso.groupby('beer_id', as_index=False).count()
-    ft = ftiso[ftiso['type'] == 'ft']
-    ft = ft.groupby('beer_id', as_index=False).count()
-    return ft, iso, beers, breweries, distribution
 
 
 def wishlist_scores(data_path):
@@ -97,9 +89,25 @@ def untappd_scores(data_path):
     beers['untappd_score'] = weighted_percentile(beers['score'])
     return beers[['id', 'untappd_score']]
 
-def score_components():
+
+def agg_weighted_score(rarity, score_weights, drop_nas=True):
+    """returns beer name, id, & score based on the inputed weights
+    input - weights as a dictionary
+    output - weighted valuation
+    """
+    rarity['score'] = 0
+    if drop_nas:
+        rarity = rarity.dropna()
+    for category, weight in score_weights.iteritems():
+        rarity['score'] += rarity[category] * weight
+    rarity['score'] = rarity['score'] / sum(score_weights.values())
+    return rarity
+
+
+def main():
     """returns a dataframe with scores from 0-1 based on iso count, ft/iso,
     distribution, production, and untappd ratings
+    note that all hardcodes at beginning of file flow here
     """
     beers = pd.read_csv(BEERS_PATH)
     # initialize output dataframe
@@ -112,20 +120,19 @@ def score_components():
     breweries = production_scores(BREWERIES_PATH)
     beers = untappd_scores(BEERS_PATH)
     # merge all dfs
-    beer_scores = [(ft, 'beer'), (iso, 'beer'), (beers, 'beer'),
-        (distribution, 'brewery'), (breweries, 'brewery')]
+    beer_scores = [
+        (ft, 'beer'),
+        (iso, 'beer'),
+        (beers, 'beer'),
+        (distribution, 'brewery'),
+        (breweries, 'brewery')
+        ]
     for df, rarity_idx in beer_scores:
         rarity = rarity.merge(df, how='left', left_on=rarity_idx,
             right_on=df.columns[0]).drop(df.columns[0], axis=1)
-    return rarity
-
-
-def main(weights):
-    """returns beer name, id, & score based on the inputted weights
-    input - weights as a dictionary
-    output - weighted valuation
-    """
+    agg_rarity = agg_weighted_score(rarity, SCORE_WEIGHTS, drop_nas=True)
+    return agg_rarity
 
 
 if __name__ == '__main__':
-    weights = 
+    rarity = main()
