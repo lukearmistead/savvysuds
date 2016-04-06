@@ -120,8 +120,12 @@ def score_components():
     return rarity
 
 
-def main():
+def main(weights):
+    """returns beer name, id, & score based on the inputted weights
+    input - weights as a dictionary
+    output - weighted valuation
+    """
 
 
 if __name__ == '__main__':
-    rarity = rarity_scores()
+    weights = 
