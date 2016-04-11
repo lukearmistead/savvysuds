@@ -48,14 +48,15 @@ def wishlist_scores(data_path, scoring_function):
     ft = ftiso[ftiso['type'] == 'ft']
     ft = ft.groupby('beer_id', as_index=False).count()
     # get ratio score
-    ft['ratio'] = iso['id'] / ft['id']
-    ft['ratio_score'] = scoring_function(ft['ratio'])
+    iso_ft = pd.merge(iso, ft, on=['beer_id'])
+    iso_ft['ratio'] = iso_ft['id_x'] / iso_ft['id_y']
+    iso_ft['ratio_score'] = scoring_function(iso_ft['ratio'])
     # get iso score
     iso['iso_score'] = scoring_function(iso['id'])
-    return ft, iso
+    return iso_ft, iso
 
 
-def distribution_scores(data_path, scoring_function, filter_zeros=True):
+def distribution_scores(data_path, scoring_function):
     """returns distribution scores as dataframe
     scores calculated based on how number of states fall
     distributing to fewer states results in a higher score
@@ -65,8 +66,6 @@ def distribution_scores(data_path, scoring_function, filter_zeros=True):
     distribution['states'] = distribution \
         .drop(['brewery_id', 'Name'], axis=1) \
         .apply(lambda x: (x != 'N').sum(), axis=1)
-    if filter_zeros:
-        distribution = distribution[distribution['states'] > 0]
     distribution['geo_score'] = scoring_function(distribution['states'])
     # inverts distribution scores to punish higher geographic footprint
     distribution['geo_score'] = 1 - distribution['geo_score']
@@ -96,14 +95,24 @@ def untappd_scores(data_path, scoring_function):
     return beers
 
 
-def agg_weighted_score(rarity, score_weights, drop_nas=True):
+def agg_weighted_score(rarity, score_weights, drop_nas=True, filter_zeros=True):
     """returns beer name, id, & score based on the inputed weights
     input - weights as a dictionary
     output - weighted valuation
     """
     rarity['score'] = 0
     if drop_nas:
+        before = len(rarity)
         rarity = rarity.dropna()
+        after = len(rarity)
+        print 'dropped ' + str(after - before) + ' na rows'
+    if filter_zeros:
+        before = len(rarity)
+        for column in ['iso_score']:
+            rarity = rarity[rarity[column] != 0]
+        after = len(rarity)
+        print 'dropped ' + str(after - before) + ' zero rows'
+        print str(after) + ' rows remain'
     for category, weight in score_weights.iteritems():
         rarity['score'] += rarity[category] * weight
     rarity['score'] = rarity['score'] / sum(score_weights.values())
@@ -127,7 +136,7 @@ def main():
     beers = untappd_scores(BEERS_PATH, weighted_percentile)
     # merge all dfs
     beer_scores = [
-        (ft[['beer_id', 'ratio_score']], 'beer'),
+        (iso_ft[['beer_id', 'ratio_score']], 'beer'),
         (iso[['beer_id', 'iso_score']], 'beer'),
         (beers[['id', 'untappd_score']], 'beer'),
         (distribution[['brewery_id', 'geo_score']], 'brewery'),
@@ -136,7 +145,7 @@ def main():
     for df, rarity_idx in beer_scores:
         rarity = rarity.merge(df, how='left', left_on=rarity_idx,
             right_on=df.columns[0]).drop(df.columns[0], axis=1)
-    agg_rarity = agg_weighted_score(rarity, SCORE_WEIGHTS, drop_nas=True)
+    agg_rarity = agg_weighted_score(rarity, SCORE_WEIGHTS)
     return agg_rarity
 
 
@@ -147,13 +156,13 @@ if __name__ == '__main__':
     # fix column names to prevent redundancies during the merges
     rarity.columns = ['name', 'beer', 'brewery']
     # get all scores based on inputted method (feature scale or percentile)
-    ft, iso = wishlist_scores(FTISO_PATH, weighted_percentile)
+    iso_ft, iso = wishlist_scores(FTISO_PATH, weighted_percentile)
     distribution = distribution_scores(DISTRIBUTION_PATH, feature_scale)
     breweries = production_scores(BREWERIES_PATH, feature_scale)
     beers = untappd_scores(BEERS_PATH, feature_scale)
     # merge all dfs
     beer_scores = [
-        (ft[['beer_id', 'ratio_score']], 'beer'),
+        (iso_ft[['beer_id', 'ratio_score']], 'beer'),
         (iso[['beer_id', 'iso_score']], 'beer'),
         (beers[['id', 'untappd_score']], 'beer'),
         (distribution[['brewery_id', 'geo_score']], 'brewery'),
