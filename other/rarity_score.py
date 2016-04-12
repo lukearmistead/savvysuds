@@ -36,7 +36,7 @@ def feature_scale(vector):
     return norm_score
 
 
-def wishlist_scores(data_path, scoring_function):
+def wishlist_scores(data_path, scoring_function, trim_data=False):
     '''returns iso/ft ratio score & iso count ratio score as dataframes
     see weighted_percentile for methodology
     higher ratio or iso count means higher score
@@ -47,9 +47,21 @@ def wishlist_scores(data_path, scoring_function):
     iso = iso.groupby('beer_id', as_index=False).count()
     ft = ftiso[ftiso['type'] == 'ft']
     ft = ft.groupby('beer_id', as_index=False).count()
+    if trim_data:
+        iso_before = len(iso)
+        iso = iso[iso['id'] > 10]
+        iso_after = len(iso)
+        print str(iso_before - iso_after) + ' isos dropped (ones)'
+
     # get ratio score
-    iso_ft = pd.merge(iso, ft, on=['beer_id'])
+    iso_ft = pd.merge(iso, ft, how='inner', on=['beer_id'])
     iso_ft['ratio'] = iso_ft['id_x'] / iso_ft['id_y']
+    # drop zeros
+    if trim_data:
+        iso_ft_before = len(iso_ft)
+        iso_ft = iso_ft[iso_ft['ratio'] > 10]
+        iso_ft_after = len(iso_ft)
+        print str(iso_ft_before - iso_ft_after) + ' iso / fts dropped (zeros)'
     iso_ft['ratio_score'] = scoring_function(iso_ft['ratio'])
     # get iso score
     iso['iso_score'] = scoring_function(iso['id'])
@@ -95,7 +107,7 @@ def untappd_scores(data_path, scoring_function):
     return beers
 
 
-def agg_weighted_score(rarity, score_weights, drop_nas=True, filter_zeros=True):
+def agg_weighted_score(rarity, score_weights, drop_nas=True):
     """returns beer name, id, & score based on the inputed weights
     input - weights as a dictionary
     output - weighted valuation
@@ -106,13 +118,6 @@ def agg_weighted_score(rarity, score_weights, drop_nas=True, filter_zeros=True):
         rarity = rarity.dropna()
         after = len(rarity)
         print 'dropped ' + str(after - before) + ' na rows'
-    if filter_zeros:
-        before = len(rarity)
-        for column in ['iso_score']:
-            rarity = rarity[rarity[column] != 0]
-        after = len(rarity)
-        print 'dropped ' + str(after - before) + ' zero rows'
-        print str(after) + ' rows remain'
     for category, weight in score_weights.iteritems():
         rarity['score'] += rarity[category] * weight
     rarity['score'] = rarity['score'] / sum(score_weights.values())
@@ -130,7 +135,7 @@ def main():
     # fix column names to prevent redundancies during the merges
     rarity.columns = ['name', 'beer', 'brewery']
     # get all scores based on inputted method (feature scale or percentile)
-    ft, iso = wishlist_scores(FTISO_PATH, feature_scale)
+    ft, iso = wishlist_scores(FTISO_PATH, weighted_percentile)
     distribution = distribution_scores(DISTRIBUTION_PATH, weighted_percentile)
     breweries = production_scores(BREWERIES_PATH, weighted_percentile)
     beers = untappd_scores(BEERS_PATH, weighted_percentile)
