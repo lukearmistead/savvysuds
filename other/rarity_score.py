@@ -38,7 +38,7 @@ def feature_scale(vector):
     return norm_score
 
 
-def wishlist_scores(data_path, scoring_function):
+def wishlist_scores(data_path, scoring_function, preserve_zeros=True):
     '''returns iso/ft ratio score & iso count ratio score as dataframes
     see weighted_percentile for methodology
     higher ratio or iso count means higher score
@@ -52,12 +52,16 @@ def wishlist_scores(data_path, scoring_function):
     ft = ftiso[ftiso['type'] == 'ft']
     ft = ft.groupby('beer_id', as_index=False).count()[['id', 'beer_id']]
     ft.columns = ['ft_count', 'beer_id']
-    # outer merge to get combined iso & ft counts for each beer
-    iso_ft = pd.merge(iso, ft, on='beer_id', how='outer')
-    iso_ft = iso_ft.fillna(0)
-    # laplace smoothing for iso & ft counts (avoids dividing by zero)
-    iso_ft['ft_count'] = iso_ft['ft_count'] + 1
-    iso_ft['iso_count'] = iso_ft['iso_count'] + 1
+    if preserve_zeros:
+        # outer merge to get combined iso & ft counts for each beer
+        iso_ft = pd.merge(iso, ft, on='beer_id', how='outer')
+        iso_ft = iso_ft.fillna(0)
+        # laplace smoothing for iso & ft counts (avoids dividing by zero)
+        iso_ft['ft_count'] = iso_ft['ft_count'] + 1
+        iso_ft['iso_count'] = iso_ft['iso_count'] + 1
+    else:
+        # inner merge to eliminate zeros in iso & ft counts for each beer
+        iso_ft = pd.merge(iso, ft, on='beer_id', how='outer')
     # finally get demand to supply ratio score
     iso_ft['ratio'] = iso_ft['iso_count'] / iso_ft['ft_count']
     iso_ft['ratio_score'] = scoring_function(iso_ft['ratio'])
@@ -148,13 +152,11 @@ def main():
         (breweries[['id', 'production_score']], 'brewery')
         ]
     for df, rarity_idx in beer_scores:
-        print df.columns[1]
-        print SCORE_WEIGHTS[df.columns[1]]
         if SCORE_WEIGHTS[df.columns[1]] > 0:
-            print 'adding'
             rarity = rarity.merge(df, how='left', left_on=rarity_idx,
                 right_on=df.columns[0]).drop(df.columns[0], axis=1)
     agg_rarity = agg_weighted_score(rarity, SCORE_WEIGHTS)
+    agg_rarity = agg_rarity.sort('score', ascending=False)
     return agg_rarity
 
 

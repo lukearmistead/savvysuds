@@ -1,4 +1,4 @@
-from itertools import combinations
+import argparse
 import logging
 import os
 
@@ -15,17 +15,6 @@ TRADE_APPROVED = 1
 BEER_RECEIVED = 2
 TRADE_DECLINED = 3
 
-# input data paths
-TRADE_PATH = '../data/input/trades.csv'
-TRADE_ITEM_PATH = '../data/input/trade_items.csv'
-FTISO_PATH = '../data/input/ftiso.csv'
-BEERS_PATH = '../data/input/beers.csv'
-BREWERS_PATH = '../data/input/breweries.csv'
-USERS_PATH = '../data/input/users.csv'
-
-
-# intermediate csv output paths (used to build recommenders)
-G_PATH = 'graph1.csv'
 
 ###############################################
 ### FUNCTIONS USED TO PREPROCESS MODEL DATA ###
@@ -37,7 +26,8 @@ def model_data(sparse,
                 traded_rate,
                 trade_path,
                 trade_item_path,
-                ftiso_path):
+                ftiso_path,
+                output_path):
     """Return user/item/rating table excluding sparse and outlying users
 
     Arguments:
@@ -61,7 +51,7 @@ def model_data(sparse,
                                                 sparse, outlier)
     df = trimmed_rec_data
     log.debug('built df with %d observations' % df.count()[0])
-    return df
+    _save_df(df, output_path)
 
 
 def _load_csvs(trade_path, trade_item_path, ftiso_path):
@@ -197,8 +187,11 @@ def item_data(beers_path, brewers_path):
     beers, brewers = _load_item_data(beers_path, brewers_path)
     # join all item tables and narrow to relevant columns
     all_items = beers.merge(brewers, left_on='brewery_id', right_on='id')
-    item_data = all_items[['id_x', 'name_x', 'style', 'abv', 'type', 'name_y', 'lat', 'lng']]
-    item_data.columns = ['item_id', 'beer_name', 'beer_style', 'abv', 'type', 'brewery', 'lat', 'lng']
+    item_data = all_items[['id_x', 'style', 'abv', 'score_x', 'state', 'type', 'score_y', 'url']]
+    item_data.columns = ['item_id', 'beer_style', 'abv', 'beer_score', 'brewer_state', 'brewer_type', 'brewer_score', 'url']
+    #url to binary
+    item_data['url'] = item_data['url'].notnull()
+    df = item_data
     return item_data
 
 
@@ -211,99 +204,23 @@ def _load_item_data(beers_path, brewers_path):
     return beers, brewers
 
 
-def main():
-    """source: beer | target: user | label: type"""
-    df = model_data(sparse=0,
-                    outlier=1000000,
-                    iso_rate=1,
-                    proposed_rate=1,
-                    traded_rate=1,
-                    trade_path=TRADE_PATH,
-                    trade_item_path=TRADE_ITEM_PATH,
-                    ftiso_path=FTISO_PATH)
-    df = df.drop('rating', axis=1)
-    brews = item_data(BEERS_PATH, BREWERS_PATH)
-    df = df.merge(brews, left_on='item_id', right_on='item_id')
-    df = df.rename(columns = {'item_id': 'Target', 'user_id': 'Source', 'beer_style': 'Label'})
-    df.to_csv(G_PATH, columns=['Source', 'Target', 'Label', 'lat', 'lng'], index=False, header=True)
-    return df
-
-def nodes_edges():
-    u_brews = model_data(sparse=0,
-                    outlier=1000000,
-                    iso_rate=1,
-                    proposed_rate=1,
-                    traded_rate=1,
-                    trade_path=TRADE_PATH,
-                    trade_item_path=TRADE_ITEM_PATH,
-                    ftiso_path=FTISO_PATH)
-    u_brews = u_brews.drop('rating', axis=1)
-    users = list(u_brews['user_id'].unique())
-    source = []
-    target = []
-    for user in users:
-        u_beers = u_brews[u_brews['user_id'] == user]
-        sim_beers = list(combinations(u_beers['item_id'], 2))
-        source = source + [beer[0] for beer in sim_beers]
-        target = target + [beer[1] for beer in sim_beers]
-    df = pd.DataFrame.from_items([('Source', source), ('Target', target)])
-
-    # build node df
-    nodes = pd.concat((df['Source'], df['Target']), ignore_index=True, axis=0)
-    nodes = pd.DataFrame(nodes, columns=['Id'])
-    brews = item_data(BEERS_PATH, BREWERS_PATH)
-    nodes = nodes.merge(brews, left_on='Id', right_on='item_id')
-    nodes.drop_duplicates(inplace=True)
-    nodes.rename(columns={'beer_style': 'Label'})
-    nodes.to_csv('nodes.csv', columns=['Id', 'beer_style', 'lat', 'lng'], index=False)
-
-    # build edge df
-    edges = df 
-    edges['Type'] = 'Undirected'
-    edges = edges[['Source', 'Target', 'Type']]
-    temp = edges.groupby('Source').item_id.transform(len)
-
-    edges.to_csv('edges.csv', index=False)
-
-
-def edges_type():
-    '''creates csv with beers as nodes and user wishlists as edges. if user 1 likes pliny & hop drop, there will be an edge connecting those two beers as nodes'''
-    # loads relationship between users and beers and drops ratings for graph use
-    u_brews = model_data(sparse=0,
-                    outlier=1000000,
-                    iso_rate=0,
-                    proposed_rate=0,
-                    traded_rate=1,
-                    trade_path=TRADE_PATH,
-                    trade_item_path=TRADE_ITEM_PATH,
-                    ftiso_path=FTISO_PATH)
-
-    u_brews = u_brews.drop('rating', axis=1)
-    # generates pairs of beers on user wishlists and outputs as a df
-    users = list(u_brews['user_id'].unique())
-    source = []
-    target = []
-    for user in users:
-        u_beers = u_brews[u_brews['user_id'] == user]
-        sim_beers = list(combinations(u_beers['item_id'], 2))
-        source = source + [beer[0] for beer in sim_beers]
-        target = target + [beer[1] for beer in sim_beers]
-    df = pd.DataFrame.from_items([('Source', source), ('Target', target)])
-    # replaces beer ids with beer types 
-    brews = item_data(BEERS_PATH, BREWERS_PATH)
-
-    edges = df.merge(brews, left_on='Target', right_on='item_id')
-    edges = edges[['Source', 'beer_style']]
-    edges.columns = ['Source', 'Target']
-    edges = edges.merge(brews, left_on='Source', right_on='item_id')
-    edges = edges[['beer_style', 'Target']]
-    edges.columns = ['Source', 'Target'] 
-    # group columns and create edge weight based on number of connections
-    edges['Weight'] = 1
-    edges = edges.groupby(['Source', 'Target']).sum() 
-    edges['Type'] = 'Undirected'
-    edges.to_csv('user_pref_beer_nodes.csv', index=True)
-
-
-if __name__ == '__main__':
-    edges_type()
+###############################################
+###  FUNCTIONS USED TO PREPROCESS REC DATA  ###
+###############################################
+def rec_data(ftiso_path, trade_path, trade_item_path, beers_path):
+    """Loads data to make usable, readable recommendations in main.py"""
+    ftiso = pd.read_csv(ftiso_path)
+    ftiso.columns = ["id", "beer_id", "quantity", "cellar_quantity", "user_id", "type", "accessible_list", "created", "modified"]
+    ft = ftiso[ftiso['type'] == 'ft']
+    user_beers = model_data(sparse=0,
+                           outlier=10000000,
+                           iso_rate=1,
+                           proposed_rate=1,
+                           traded_rate=1,
+                           trade_path=trade_path,
+                           trade_item_path=trade_item_path,
+                           ftiso_path=ftiso_path)
+    user_beers = user_beers[['user_id', 'item_id']]
+    beers = pd.read_csv(beers_path)
+    beers.columns = ["id", "name", "style", "description", "abv", "label", "score", "brewery_id", "brewery_name", "created", "modified"]
+    return ft, user_beers, beers
