@@ -157,29 +157,9 @@ def main():
                 right_on=df.columns[0]).drop(df.columns[0], axis=1)
     agg_rarity = agg_weighted_score(rarity, SCORE_WEIGHTS)
     agg_rarity = agg_rarity.sort('score', ascending=False)
-    return agg_rarity
+    # agg_rarity = agg_weighted_score(rarity, SCORE_WEIGHTS, drop_nas=True)
+    return agg_rarity, iso_ft, distribution, breweries, beers
 
 
 if __name__ == '__main__':
-    beers = pd.read_csv(BEERS_PATH)
-    # initialize output dataframe
-    rarity = beers[['name', 'id', 'brewery_id']]
-    # fix column names to prevent redundancies during the merges
-    rarity.columns = ['name', 'beer', 'brewery']
-    # get all scores based on inputted method (feature scale or percentile)
-    iso_ft = wishlist_scores(FTISO_PATH, weighted_percentile)
-    distribution = distribution_scores(DISTRIBUTION_PATH, feature_scale)
-    breweries = production_scores(BREWERIES_PATH, feature_scale)
-    beers = untappd_scores(BEERS_PATH, feature_scale)
-    # merge all dfs
-    beer_scores = [
-        (iso_ft[['beer_id', 'ratio_score']], 'beer'),
-        (iso_ft[['beer_id', 'iso_score']], 'beer'),
-        (beers[['id', 'untappd_score']], 'beer'),
-        (distribution[['brewery_id', 'geo_score']], 'brewery'),
-        (breweries[['id', 'production_score']], 'brewery')
-        ]
-    for df, rarity_idx in beer_scores:
-        rarity = rarity.merge(df, how='left', left_on=rarity_idx,
-            right_on=df.columns[0]).drop(df.columns[0], axis=1)
-    agg_rarity = agg_weighted_score(rarity, SCORE_WEIGHTS, drop_nas=True)
+    pass
