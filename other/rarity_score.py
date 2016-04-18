@@ -61,7 +61,7 @@ def wishlist_scores(data_path, scoring_function, preserve_zeros=True):
         iso_ft['iso_count'] = iso_ft['iso_count'] + 1
     else:
         # inner merge to eliminate zeros in iso & ft counts for each beer
-        iso_ft = pd.merge(iso, ft, on='beer_id', how='outer')
+        iso_ft = pd.merge(iso, ft, on='beer_id', how='inner')
     # finally get demand to supply ratio score
     iso_ft['ratio'] = iso_ft['iso_count'] / iso_ft['ft_count']
     iso_ft['ratio_score'] = scoring_function(iso_ft['ratio'])
