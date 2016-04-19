@@ -131,7 +131,8 @@ def main():
     nmf_model = gl.load_model(NMF_MODEL_PATH)
     pop_model = gl.load_model(POP_MODEL_PATH)
     # get recommendations & export as json
-    users = gl.SFrame.read_csv(USERS_PATH)
+    users = pd.read_csv(USERS_PATH)['id'].to_frame(name='id')
+    users = gl.SFrame(users)
     is_recs = is_model.recommend(users=users['id'],
                     exclude=exclude_beers,
                     diversity=3)
@@ -149,3 +150,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

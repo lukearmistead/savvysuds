@@ -191,8 +191,7 @@ def item_data(beers_path, brewers_path):
     item_data.columns = ['item_id', 'beer_style', 'abv', 'beer_score', 'brewer_state', 'brewer_type', 'brewer_score', 'url']
     #url to binary
     item_data['url'] = item_data['url'].notnull()
-    df = item_data
-    return item_data
+    return item_data.drop('brewer_state', axis=1)
 
 
 def _load_item_data(beers_path, brewers_path):
