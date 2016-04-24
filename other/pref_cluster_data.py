@@ -20,12 +20,13 @@ TRADE_PATH = '../data/input/trades.csv'
 TRADE_ITEM_PATH = '../data/input/trade_items.csv'
 FTISO_PATH = '../data/input/ftiso.csv'
 BEERS_PATH = '../data/input/beers.csv'
+
 BREWERS_PATH = '../data/input/breweries.csv'
 USERS_PATH = '../data/input/users.csv'
 
 
-# intermediate csv output paths (used to build recommenders)
-G_PATH = 'graph1.csv'
+# intermediate csv output paths 
+G_PATH = 'graph.csv'
 
 ###############################################
 ### FUNCTIONS USED TO PREPROCESS MODEL DATA ###
@@ -211,12 +212,15 @@ def _load_item_data(beers_path, brewers_path):
     return beers, brewers
 
 
-def main():
+###############################################
+### FUNCTIONS USED TO GENERATE GRAPH CSV'S  ###
+###############################################
+def user_beer_nodes_wishlist_edges():
     """source: beer | target: user | label: type"""
-    df = model_data(sparse=0,
+    df = model_data(sparse=1,
                     outlier=1000000,
-                    iso_rate=1,
-                    proposed_rate=1,
+                    iso_rate=0,
+                    proposed_rate=0,
                     traded_rate=1,
                     trade_path=TRADE_PATH,
                     trade_item_path=TRADE_ITEM_PATH,
@@ -226,48 +230,10 @@ def main():
     df = df.merge(brews, left_on='item_id', right_on='item_id')
     df = df.rename(columns = {'item_id': 'Target', 'user_id': 'Source', 'beer_style': 'Label'})
     df.to_csv(G_PATH, columns=['Source', 'Target', 'Label', 'lat', 'lng'], index=False, header=True)
-    return df
-
-def nodes_edges():
-    u_brews = model_data(sparse=0,
-                    outlier=1000000,
-                    iso_rate=1,
-                    proposed_rate=1,
-                    traded_rate=1,
-                    trade_path=TRADE_PATH,
-                    trade_item_path=TRADE_ITEM_PATH,
-                    ftiso_path=FTISO_PATH)
-    u_brews = u_brews.drop('rating', axis=1)
-    users = list(u_brews['user_id'].unique())
-    source = []
-    target = []
-    for user in users:
-        u_beers = u_brews[u_brews['user_id'] == user]
-        sim_beers = list(combinations(u_beers['item_id'], 2))
-        source = source + [beer[0] for beer in sim_beers]
-        target = target + [beer[1] for beer in sim_beers]
-    df = pd.DataFrame.from_items([('Source', source), ('Target', target)])
-
-    # build node df
-    nodes = pd.concat((df['Source'], df['Target']), ignore_index=True, axis=0)
-    nodes = pd.DataFrame(nodes, columns=['Id'])
-    brews = item_data(BEERS_PATH, BREWERS_PATH)
-    nodes = nodes.merge(brews, left_on='Id', right_on='item_id')
-    nodes.drop_duplicates(inplace=True)
-    nodes.rename(columns={'beer_style': 'Label'})
-    nodes.to_csv('nodes.csv', columns=['Id', 'beer_style', 'lat', 'lng'], index=False)
-
-    # build edge df
-    edges = df 
-    edges['Type'] = 'Undirected'
-    edges = edges[['Source', 'Target', 'Type']]
-    temp = edges.groupby('Source').item_id.transform(len)
-
-    edges.to_csv('edges.csv', index=False)
 
 
-def edges_type():
-    '''creates csv with beers as nodes and user wishlists as edges. if user 1 likes pliny & hop drop, there will be an edge connecting those two beers as nodes'''
+def type_nodes_wishlist_edges():
+    '''creates csv with beer types as nodes and user wishlists as edges. if user 1 likes pliny & hop drop, there will be an edge connecting those two beers as nodes'''
     # loads relationship between users and beers and drops ratings for graph use
     u_brews = model_data(sparse=0,
                     outlier=1000000,
@@ -291,7 +257,6 @@ def edges_type():
     df = pd.DataFrame.from_items([('Source', source), ('Target', target)])
     # replaces beer ids with beer types 
     brews = item_data(BEERS_PATH, BREWERS_PATH)
-
     edges = df.merge(brews, left_on='Target', right_on='item_id')
     edges = edges[['Source', 'beer_style']]
     edges.columns = ['Source', 'Target']
@@ -302,8 +267,46 @@ def edges_type():
     edges['Weight'] = 1
     edges = edges.groupby(['Source', 'Target']).sum() 
     edges['Type'] = 'Undirected'
-    edges.to_csv('user_pref_beer_nodes.csv', index=True)
+    edges.to_csv(G_PATH, index=True)
+
+
+def beer_nodes_wishlist_edges():
+    '''creates csv with beers as nodes and user trades as edges. If user 1 traded for pliny & hop drop, there will be an edge connecting those two beers as nodes'''
+    # loads relationship between users and beers and drops ratings for graph use
+    u_brews = model_data(sparse=3,
+                    outlier=25,
+                    iso_rate=0,
+                    proposed_rate=0,
+                    traded_rate=1,
+                    trade_path=TRADE_PATH,
+                    trade_item_path=TRADE_ITEM_PATH,
+                    ftiso_path=FTISO_PATH)
+
+    u_brews = u_brews.drop('rating', axis=1)
+    # generates pairs of beers on user wishlists and outputs as a df
+    users = list(u_brews['user_id'].unique())
+    source = []
+    target = []
+    for user in users:
+        u_beers = u_brews[u_brews['user_id'] == user]
+        sim_beers = list(combinations(u_beers['item_id'], 2))
+        source = source + [beer[0] for beer in sim_beers]
+        target = target + [beer[1] for beer in sim_beers]
+    df = pd.DataFrame.from_items([('Source', source), ('Target', target)])
+    # labels source & target beers
+    brews = item_data(BEERS_PATH, BREWERS_PATH)
+    edges = df.merge(brews, left_on='Target', right_on='item_id')
+    edges = edges[['Source', 'Target', 'beer_name', 'beer_style']]
+    edges.columns = ['Source', 'Target', 'Target Beer', 'Target Style']
+    edges = edges.merge(brews, left_on='Source', right_on='item_id')
+    edges = edges[['Source', 'Target', 'Target Beer', 'Target Style', 'beer_name', 'beer_style']]
+    edges.columns = ['Source', 'Target', 'Target Beer', 'Target Style', 'Source Beer', 'Source Style']
+    # edges.columns = ['Source', 'Target', 'Label', 'Label2']
+    # group columns and create edge weight based on number of connections
+    edges['Weight'] = 1
+    edges['Type'] = 'Undirected'
+    edges.to_csv(G_PATH, index=True)
 
 
 if __name__ == '__main__':
-    edges_type()
+    user_beer_nodes_wishlist_edges()
