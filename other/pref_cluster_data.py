@@ -213,7 +213,7 @@ def _load_item_data(beers_path, brewers_path):
 
 
 ###############################################
-### FUNCTIONS USED TO GENERATE GRAPH CSV'S  ###
+### FUNCTIONS USED TO GENERATE GRAPH CSVS  ###
 ###############################################
 def user_beer_nodes_wishlist_edges():
     """source: beer | target: user | label: type"""
@@ -233,7 +233,7 @@ def user_beer_nodes_wishlist_edges():
 
 
 def type_nodes_wishlist_edges():
-    '''creates csv with beer types as nodes and user wishlists as edges. if user 1 likes pliny & hop drop, there will be an edge connecting those two beers as nodes'''
+    '''creates csv with beer types as nodes and user wishlists as edges. if user 1 likes pliny & hop drop, there will be an edge connecting the types of those two beers as nodes'''
     # loads relationship between users and beers and drops ratings for graph use
     u_brews = model_data(sparse=0,
                     outlier=1000000,
@@ -273,8 +273,8 @@ def type_nodes_wishlist_edges():
 def beer_nodes_wishlist_edges():
     '''creates csv with beers as nodes and user trades as edges. If user 1 traded for pliny & hop drop, there will be an edge connecting those two beers as nodes'''
     # loads relationship between users and beers and drops ratings for graph use
-    u_brews = model_data(sparse=3,
-                    outlier=25,
+    u_brews = model_data(sparse=0,
+                    outlier=100000000,
                     iso_rate=0,
                     proposed_rate=0,
                     traded_rate=1,
@@ -293,20 +293,24 @@ def beer_nodes_wishlist_edges():
         source = source + [beer[0] for beer in sim_beers]
         target = target + [beer[1] for beer in sim_beers]
     df = pd.DataFrame.from_items([('Source', source), ('Target', target)])
+    # group duplicates
+    df['Weight'] = 1
+    df = df.groupby(['Source', 'Target'], axis=0, as_index=False).sum()
     # labels source & target beers
     brews = item_data(BEERS_PATH, BREWERS_PATH)
     edges = df.merge(brews, left_on='Target', right_on='item_id')
-    edges = edges[['Source', 'Target', 'beer_name', 'beer_style']]
-    edges.columns = ['Source', 'Target', 'Target Beer', 'Target Style']
+    edges = edges[['Source', 'Target', 'Weight', 'beer_name', 'beer_style']]
+    edges.columns = ['Source', 'Target', 'Weight', 'Target Beer', 'Target Style']
     edges = edges.merge(brews, left_on='Source', right_on='item_id')
-    edges = edges[['Source', 'Target', 'Target Beer', 'Target Style', 'beer_name', 'beer_style']]
-    edges.columns = ['Source', 'Target', 'Target Beer', 'Target Style', 'Source Beer', 'Source Style']
-    # edges.columns = ['Source', 'Target', 'Label', 'Label2']
+    edges = edges[['Source', 'Target', 'Weight', 'Target Beer', 'Target Style', 
+                   'beer_name', 'beer_style']]
+    edges.columns = ['Source', 'Target', 'Weight', 'Target Beer', 'Target Style', 
+                     'Source Beer', 'Source Style']
     # group columns and create edge weight based on number of connections
-    edges['Weight'] = 1
     edges['Type'] = 'Undirected'
     edges.to_csv(G_PATH, index=True)
 
 
 if __name__ == '__main__':
     user_beer_nodes_wishlist_edges()
+    
