@@ -11,7 +11,7 @@ I used an item similarity collaborative filtering model that employs Jaccard sim
 
 Here's a more visual explanation of item similarity:
 
-<img src="/readme_assets/item_similarity_infographic.jpg" style="width: 400px;"/>
+<img src="/readme_assets/item_similarity_infographic.jpg" style="width: 250px;"/>
 
 *Special thanks to the design wizards at [Galvanize](http://www.galvanize.com/blog/beer-recommender/) for the awesome infographic :)*
 
