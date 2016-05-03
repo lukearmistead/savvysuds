@@ -8,7 +8,8 @@ I built an item similarity recommender using craft beer trading data from the ~2
 
 ### Model
 I used an item similarity collaborative filtering model that employs Jaccard similarity to choose which beers to recommend. That's a fancy way of saying that my model recommends the beers from the wishlists of users like you. The algorithm avoids suggesting beers preferred by users with different preferences, which helps to alleviate the popularity bias that generally plagues recommenders.
-### Intuition behind collaborative filtering
+
+Here's a more visual explanation of item similarity:
 ![graph](/readme_assets/item_similarity_infographic.jpg)
 *Special thanks to the design wizards at [Galvanize](http://www.galvanize.com/blog/beer-recommender/) for the awesome infographic :)*
 
@@ -24,7 +25,7 @@ It takes a lot of effort to complete a trade for a beer. You have to find a trad
 
 Users who had too few beer interactions don't provide much information on how beers relate to each other and were thus filtered out of the dataset used to train the model.
 
-### Beer Preference clusters
+### Beer Tastes
 The interactions between users and beers reveal some very interesting patterns user tastes. Three distinct communities emerged, IPA lovers, stout lovers, and sour lovers. Interestingly, there was a lot of overlap between these communities, revealing strong diversity in the taste of these communities.
 
 
