@@ -32,7 +32,7 @@ The interactions between users and beers reveal some very interesting patterns u
 ![graph](/readme_assets/graph_viz.png)
 
 ### Learn More
-##### Coverage: [galvanize.com/blog/beer-recommender](http://www.galvanize.com/blog/beer-recommender/)
+##### Press: [galvanize.com/blog/beer-recommender](http://www.galvanize.com/blog/beer-recommender/)
 Read Galvanize's take on my recommender.
 ##### Web app: [savvysuds.io](http://www.savvysuds.io)
 Get some ideas about what beer to try next.
