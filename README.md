@@ -9,9 +9,9 @@ I built an item similarity recommender using craft beer trading data from the ~2
 ### Model
 I used an item similarity collaborative filtering model that employs Jaccard similarity to choose which beers to recommend. That's a fancy way of saying that my model recommends the beers from the wishlists of users like you. The algorithm avoids suggesting beers preferred by users with different preferences, which helps to alleviate the popularity bias that generally plagues recommenders.
 
-Here's a more visual explanation of item similarity:
+Here's a visual explanation of item similarity:
 
-<img src="/readme_assets/item_similarity_infographic.jpg" style="max-width: 50%;"/>
+<img src="/readme_assets/item_similarity_infographic.jpg" width=50%/>
 
 *Special thanks to the design wizards at [Galvanize](http://www.galvanize.com/blog/beer-recommender/) for the awesome infographic :)*
 
