@@ -40,5 +40,5 @@ Read Galvanize's take on my recommender.
 Get some ideas about what beer to try next.
 ##### BEX homepage: [thebeerexchange.io](http://www.thebeerexchange.io/)
 The beer trading platform where you can get essentially any beer you want.
-##### Slides from my presentation: [ow.ly/Oc5y300Z7Ue](ow.ly/Oc5y300Z7Ue)
+##### Slides from my presentation: [ow.ly/Oc5y300Z7Ue](http://www.ow.ly/Oc5y300Z7Ue)
 I gave a talk about this model in late January.
