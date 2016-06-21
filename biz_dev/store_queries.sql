@@ -69,7 +69,7 @@ ORDER BY shop_id, count(ftiso.beer_id) DESC;
 
 
 #########################################################
-### Popular nearby breweries you don't carry ###
+### Popular nearby breweries you dont carry ###
 #########################################################
 -- Of all the breweries you listed in your inventory, this will list them in
 -- order of most often offered For Trade by BEX users to least often offered
@@ -116,3 +116,51 @@ ON store_shop.state = all_breweries.brewery_state COLLATE utf8_unicode_ci
 WHERE breweries.id <> all_breweries.brewery_id
 GROUP BY all_breweries.brewery_id
 ORDER BY store_items.shop_id, all_breweries.popularity DESC;
+
+
+#########################################################
+### Popular new, nearby beers you dont carry ###
+#########################################################
+
+-- TOGGLES
+SET @NUM_DAYS = 90;
+SET @FTISO = "ft";
+SET @STORE_ID = 4;
+
+SELECT beers.id, beers.name, ft.ft_count
+FROM beers
+
+-- get brewery state info
+JOIN breweries
+ON beers.brewery_id = breweries.id
+
+-- get beer counts
+JOIN (
+    SELECT beer_id, count(type) AS ft_count
+    FROM ftiso
+    WHERE type = @FTISO 
+    GROUP BY beer_id
+    ) AS ft
+ON beers.id = ft.beer_id
+
+-- limit to newest beers
+WHERE DATE(beers.created) > DATE(NOW() - INTERVAL @NUM_DAYS DAY)
+
+-- filter beers by state
+AND breweries.state COLLATE utf8_unicode_ci = (
+	SELECT state
+	FROM store_shop
+	WHERE id = @STORE_ID
+	)
+
+-- filter in-stock beers
+AND beers.id NOT IN (
+    SELECT store_items.beer_id
+    FROM store_items
+    JOIN store_shop
+    ON store_items.shop_id = store_shop.id
+    WHERE store_shop.id = @STORE_ID
+    )
+
+ORDER BY ft.ft_count DESC
+LIMIT 5;
